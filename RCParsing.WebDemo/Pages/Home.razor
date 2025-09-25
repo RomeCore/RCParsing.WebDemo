@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject IJSRuntime JS
+
+<PageTitle>Home</PageTitle>
+
+<StandaloneCodeEditor @ref="editor"
+					  Id="my-code-editor"
+					  OnDidChangeModel="OnChange"
+					  OnDidChangeModelContent="OnChange"
+					  ConstructionOptions="EditorConstructionOptions" />
+
+<ASTComponent @ref="ast"/>
+
+<style>
+
+	#my-code-editor {
+		height: 500px;
+	}
+
+</style>
+
+@code {
+	#nullable disable
+
+	private StandaloneCodeEditor editor;
+	private ASTComponent ast;
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+		{
+			AutomaticLayout = true,
+			Theme = "vs-dark",
+			Minimap = new EditorMinimapOptions { Enabled = false },
+
+			Language = "antlr",
+			Value =
+@"
+ID : [0-9]* ;
+".Trim()
+		};
+	}
+
+	protected async override Task OnAfterRenderAsync(bool firstRender)
+	{
+		await base.OnAfterRenderAsync(firstRender);
+
+		ast.Render(gv);
+	}
+
+	private bool _flag;
+
+	private async Task OnChange()
+	{
+		if (_flag) return;
+		_flag = true;
+
+		var content = editor.GetValue();
+		var model = await editor.GetModel();
+		var markers = new List<MarkerData>();
+		markers.Add(new MarkerData { Severity = MarkerSeverity.Error, Message = "Test", StartLineNumber = 1, EndLineNumber = 1, StartColumn = 1, EndColumn = 2 });
+		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "owner", markers);
+		await editor.SetModel(model);
+
+		_flag = false;
+	}
+}

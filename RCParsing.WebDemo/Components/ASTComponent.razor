@@ -1,0 +1,18 @@
+﻿<MermaidDiagram Definition="@definition" />
+
+@code {
+	#nullable disable
+
+	private string definition;
+
+	public void Render(ParsedRuleResultBase ast)
+	{
+
+	}
+
+	public void Render(string mermaid)
+	{
+		definition = mermaid;
+		InvokeAsync(StateHasChanged);
+	}
+}
