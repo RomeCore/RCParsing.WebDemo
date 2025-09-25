@@ -32,11 +32,23 @@
 			AutomaticLayout = true,
 			Theme = "vs-dark",
 			Minimap = new EditorMinimapOptions { Enabled = false },
+			SmoothScrolling = true,
 
-			Language = "antlr",
+			Language = "sbnf",
 			Value =
 @"
-ID : [0-9]* ;
+ID : $identifier ;
+IF : $keyword 'if' ;
+AT : '@' ;
+BOOL : $keyword choice 'true' | 'false' ;
+NUMBER : $number double ;
+HTML_COL : $pattern '#[0-9a-fA-F]{6}' ;
+
+value : STRING | NUMBER | BOOL ;
+array : '[' $list of value sep by ',' ']' ;
+$main object : '{' $list of ( STRING ':' value ) sep by ',' ']' ;
+
+$skip before greedy : ( $whitespaces ) | ( '//' $until $newline ) ;
 ".Trim()
 		};
 	}
@@ -46,6 +58,7 @@ ID : [0-9]* ;
 		await base.OnAfterRenderAsync(firstRender);
 
 		ast.Render(gv);
+		await JS.InvokeVoidAsync("register_lang", "sbnf");
 	}
 
 	private bool _flag;
@@ -55,7 +68,7 @@ ID : [0-9]* ;
 		if (_flag) return;
 		_flag = true;
 
-		var content = editor.GetValue();
+		var content = await editor.GetValue();
 		var model = await editor.GetModel();
 		var markers = new List<MarkerData>();
 		markers.Add(new MarkerData { Severity = MarkerSeverity.Error, Message = "Test", StartLineNumber = 1, EndLineNumber = 1, StartColumn = 1, EndColumn = 2 });
