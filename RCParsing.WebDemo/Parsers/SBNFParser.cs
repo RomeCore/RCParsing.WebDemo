@@ -34,10 +34,14 @@ namespace RCParsing.WebDemo.Parsers
 			builder.Settings.SkipWhitespaces();
 
 			builder.CreateToken("token_name")
-				.Identifier(char.IsLower, c => char.IsLetterOrDigit(c) || c == '_');
+				.Identifier(char.IsLower, c => char.IsLetterOrDigit(c) || c == '_')
+
+				.Transform(v => v.Text);
 
 			builder.CreateToken("rule_name")
-				.Identifier(char.IsUpper, c => char.IsLetterOrDigit(c) || c == '_');
+				.Identifier(char.IsUpper, c => char.IsLetterOrDigit(c) || c == '_')
+
+				.Transform(v => v.Text);
 
 			builder.CreateRule("token_block")
 				.Literal(':')
