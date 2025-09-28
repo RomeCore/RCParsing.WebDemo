@@ -60,6 +60,5 @@
 
 	monaco.languages.register({ id: id });
 	monaco.languages.setMonarchTokensProvider(id, lang_monarch);
-
 }
 window.register_lang = register_lang;
