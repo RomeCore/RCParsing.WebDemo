@@ -49,8 +49,13 @@
 		await base.OnAfterRenderAsync(firstRender);
 
 		grammarEditor.OnParserChanged += () => mainEditor.SetParser(grammarEditor.parser);
-		mainEditor.OnAstChanged += () => ast.Render(mainEditor.ast);
-		// ast.Render(gv);
+		mainEditor.OnParseStateChanged += () =>
+		{
+			if (mainEditor.exception != null)
+				ast.ShowException(mainEditor.exception);
+			else
+				ast.Render(mainEditor.ast);
+		};
 
 		try
 		{

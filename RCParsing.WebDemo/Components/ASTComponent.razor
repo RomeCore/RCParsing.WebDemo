@@ -2,11 +2,17 @@
 
 @if (exception != null)
 {
-	@exception.ToString()
+	<pre>
+		<code>
+			@exception.ToString().Replace("\t", "    ")
+		</code>
+	</pre>
 }
 else
 {
-	<MermaidDiagram Definition="@definition" />
+	<div style="overflow-y: auto; border: 1px solid #ccc;">
+		<MermaidDiagram Definition="@definition" />
+	</div>
 }
 
 @code {
@@ -17,6 +23,8 @@ else
 
 	public void Render(ParsedRuleResultBase ast)
 	{
+		ast = ast.Optimized();
+
 		var sb = new StringBuilder();
 		sb.AppendLine("flowchart TD");
 
@@ -28,7 +36,8 @@ else
 		{
 			var (node, parentId, id) = queue.Dequeue();
 			string nodeName = $"node{id}";
-			string nodeLabel = node.Rule.ToString(0);
+			bool isToken = node.IsToken;
+			string nodeLabel = isToken && node.Length > 0 ? node.Text.Replace("\"", "#quot;") : node.Rule.ToString(0);
 
 			sb.AppendLine($"    {nodeName}[\"{nodeLabel}\"]");
 
@@ -38,7 +47,7 @@ else
 				sb.AppendLine($"    {parentName} --> {nodeName}");
 			}
 
-			if (!node.IsToken)
+			if (!isToken)
 			{
 				foreach (var child in node)
 				{

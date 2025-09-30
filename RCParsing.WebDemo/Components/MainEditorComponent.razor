@@ -19,7 +19,8 @@ ConstructionOptions="EditorConstructionOptions" />
 	private StandaloneCodeEditor editor;
 	public Parser parser;
 	public ParsedRuleResultBase ast;
-	public Action OnAstChanged;
+	public ParsingException exception;
+	public Action OnParseStateChanged;
 
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
@@ -92,11 +93,14 @@ ConstructionOptions="EditorConstructionOptions" />
 		{
 			var content = await editor.GetValue();
 			ast = parser.Parse(content);
-			OnAstChanged?.Invoke();
+			exception = null;
+			OnParseStateChanged?.Invoke();
 			await RemoveError();
 		}
 		catch (ParsingException ex)
 		{
+			exception = ex;
+			OnParseStateChanged?.Invoke();
 			await SetErrors(new ErrorGroup[] { ex.Groups.Last });
 		}
 		catch (Exception ex)
