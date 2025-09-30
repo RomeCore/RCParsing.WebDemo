@@ -353,7 +353,8 @@ namespace RCParsing.WebDemo.Parsers
 							Child = rule,
 							Separator = sepRule,
 							MinCount = quantifier.Min,
-							MaxCount = quantifier.Max
+							MaxCount = quantifier.Max,
+							IncludeSeparatorsInResult = true
 						};
 					}
 
