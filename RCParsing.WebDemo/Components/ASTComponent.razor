@@ -1,5 +1,10 @@
 ﻿@using System.Text
 
+<label>
+	<input type="checkbox" checked="@optimizeAst" @onchange="CheckboxChanged" />
+	Optimize tree?
+</label>
+
 @if (exception != null)
 {
 	<pre>
@@ -20,10 +25,14 @@ else
 
 	private string definition;
 	private ParsingException exception;
+	private ParsedRuleResultBase originalAst;
+	private bool optimizeAst = false;
 
 	public void Render(ParsedRuleResultBase ast)
 	{
-		ast = ast.Optimized();
+		originalAst = ast;
+		if (optimizeAst)
+			ast = ast.Optimized();
 
 		var sb = new StringBuilder();
 		sb.AppendLine("flowchart TD");
@@ -60,6 +69,12 @@ else
 		Render(sb.ToString());
 	}
 
+	private void CheckboxChanged(ChangeEventArgs e)
+	{
+		optimizeAst = (bool)e.Value;
+		if (exception == null)
+			Render(originalAst);
+	}
 
 	public void Render(string mermaid)
 	{
