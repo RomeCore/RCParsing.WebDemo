@@ -1,0 +1,118 @@
+﻿@inject IJSRuntime JS
+
+<StandaloneCodeEditor @ref="editor"
+Id="main-code-editor"
+OnDidChangeModel="OnChange"
+OnDidChangeModelContent="OnChange"
+ConstructionOptions="EditorConstructionOptions" />
+
+<style>
+
+	#main-code-editor {
+	}
+
+</style>
+
+@code {
+	#nullable disable
+
+	private StandaloneCodeEditor editor;
+	public Parser parser;
+	public ParsedRuleResultBase ast;
+	public Action OnAstChanged;
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+			{
+				AutomaticLayout = true,
+				Theme = "vs-dark",
+				Minimap = new EditorMinimapOptions { Enabled = false },
+				SmoothScrolling = true,
+
+				Value =
+@"
+{
+	""name"": ""John Doe"",
+	""age"": 21,
+	""tags"": [ ""tag1"", ""tag2"", ""tag3"" ]
+}
+".Trim()
+			};
+	}
+
+	private bool _flag;
+
+	protected async override Task OnAfterRenderAsync(bool firstRender)
+	{
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	private async Task SetErrors(IEnumerable<ErrorGroup> errors)
+	{
+		var model = await editor.GetModel();
+		var markers = new List<MarkerData>();
+
+		foreach (var error in errors)
+		{
+			var message = "Expected one of:\n" + error.Expected.Tokens.ToString().Indent("  ");
+
+			markers.Add(new MarkerData
+				{
+					Severity = MarkerSeverity.Error,
+					Message = message,
+					StartLineNumber = error.Line,
+					EndLineNumber = error.Line,
+					StartColumn = error.Column,
+					EndColumn = error.Column + 1
+				});
+		}
+
+		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "ed_owner", markers);
+		await editor.SetModel(model);
+	}
+
+	private async Task RemoveError()
+	{
+		var model = await editor.GetModel();
+		var markers = new List<MarkerData>();
+		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "ed_owner", markers);
+		await editor.SetModel(model);
+	}
+
+	public void SetParser(Parser parser)
+	{
+		this.parser = parser;
+		OnChange();
+	}
+
+	public async Task Update()
+	{
+		try
+		{
+			var content = await editor.GetValue();
+			ast = parser.Parse(content);
+			OnAstChanged?.Invoke();
+			await RemoveError();
+		}
+		catch (ParsingException ex)
+		{
+			await SetErrors(new ErrorGroup[] { ex.Groups.Last });
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+			await RemoveError();
+		}
+	}
+
+	private async Task OnChange()
+	{
+		if (_flag) return;
+		_flag = true;
+
+		await Update();
+
+		_flag = false;
+	}
+}

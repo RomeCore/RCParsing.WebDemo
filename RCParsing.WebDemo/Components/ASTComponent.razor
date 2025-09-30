@@ -1,18 +1,67 @@
-﻿<MermaidDiagram Definition="@definition" />
+﻿@using System.Text
+
+@if (exception != null)
+{
+	@exception.ToString()
+}
+else
+{
+	<MermaidDiagram Definition="@definition" />
+}
 
 @code {
 	#nullable disable
 
 	private string definition;
+	private ParsingException exception;
 
 	public void Render(ParsedRuleResultBase ast)
 	{
+		var sb = new StringBuilder();
+		sb.AppendLine("flowchart TD");
 
+		int counter = 0;
+		var queue = new Queue<(ParsedRuleResultBase node, int? parentId, int id)>();
+		queue.Enqueue((ast, null, counter));
+
+		while (queue.Count > 0)
+		{
+			var (node, parentId, id) = queue.Dequeue();
+			string nodeName = $"node{id}";
+			string nodeLabel = node.Rule.ToString(0);
+
+			sb.AppendLine($"    {nodeName}[\"{nodeLabel}\"]");
+
+			if (parentId.HasValue)
+			{
+				string parentName = $"node{parentId.Value}";
+				sb.AppendLine($"    {parentName} --> {nodeName}");
+			}
+
+			if (!node.IsToken)
+			{
+				foreach (var child in node)
+				{
+					int childId = ++counter;
+					queue.Enqueue((child, id, childId));
+				}
+			}
+		}
+
+		Render(sb.ToString());
 	}
+
 
 	public void Render(string mermaid)
 	{
 		definition = mermaid;
+		this.exception = null;
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void ShowException(ParsingException exception)
+	{
+		this.exception = exception;
 		InvokeAsync(StateHasChanged);
 	}
 }

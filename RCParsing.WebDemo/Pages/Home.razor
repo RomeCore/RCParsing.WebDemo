@@ -3,18 +3,36 @@
 
 <PageTitle>Home</PageTitle>
 
-<StandaloneCodeEditor @ref="editor"
-					  Id="my-code-editor"
-					  OnDidChangeModel="OnChange"
-					  OnDidChangeModelContent="OnChange"
-					  ConstructionOptions="EditorConstructionOptions" />
+<div class="main-container">
 
-<ASTComponent @ref="ast"/>
+	<div class="editor-container">
+
+		<GrammarEditorComponent @ref="grammarEditor" />
+
+		<MainEditorComponent @ref="mainEditor" />
+
+	</div>
+
+	<div>
+
+		<ASTComponent @ref="ast" />
+
+	</div>
+
+</div>
 
 <style>
 
-	#my-code-editor {
-		height: 500px;
+	.editor-container {
+	display: grid;
+	grid-template-rows: 1fr 1fr;
+	gap: 20px;
+	}
+
+	.main-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
 	}
 
 </style>
@@ -22,59 +40,23 @@
 @code {
 	#nullable disable
 
-	private StandaloneCodeEditor editor;
+	private GrammarEditorComponent grammarEditor;
+	private MainEditorComponent mainEditor;
 	private ASTComponent ast;
-
-	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
-	{
-		return new StandaloneEditorConstructionOptions
-		{
-			AutomaticLayout = true,
-			Theme = "vs-dark",
-			Minimap = new EditorMinimapOptions { Enabled = false },
-			SmoothScrolling = true,
-
-			Language = "sbnf",
-			Value =
-@"
-ID : $identifier ;
-IF : $keyword 'if' ;
-AT : '@' ;
-BOOL : $keyword choice 'true' | 'false' ;
-NUMBER : $number double ;
-HTML_COL : $pattern '#[0-9a-fA-F]{6}' ;
-
-value : STRING | NUMBER | BOOL ;
-array : '[' $list of value sep by ',' ']' ;
-$main object : '{' $list of ( STRING ':' value ) sep by ',' ']' ;
-
-$skip before greedy : ( $whitespaces ) | ( '//' $until $newline ) ;
-".Trim()
-		};
-	}
 
 	protected async override Task OnAfterRenderAsync(bool firstRender)
 	{
 		await base.OnAfterRenderAsync(firstRender);
 
-		ast.Render(gv);
-		await JS.InvokeVoidAsync("register_lang", "sbnf");
-	}
+		grammarEditor.OnParserChanged += () => mainEditor.SetParser(grammarEditor.parser);
+		mainEditor.OnAstChanged += () => ast.Render(mainEditor.ast);
+		// ast.Render(gv);
 
-	private bool _flag;
-
-	private async Task OnChange()
-	{
-		if (_flag) return;
-		_flag = true;
-
-		var content = await editor.GetValue();
-		var model = await editor.GetModel();
-		var markers = new List<MarkerData>();
-		markers.Add(new MarkerData { Severity = MarkerSeverity.Error, Message = "Test", StartLineNumber = 1, EndLineNumber = 1, StartColumn = 1, EndColumn = 2 });
-		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "owner", markers);
-		await editor.SetModel(model);
-
-		_flag = false;
+		try
+		{
+			await Task.Delay(100);
+			await grammarEditor.Update();
+		}
+		catch {}
 	}
 }

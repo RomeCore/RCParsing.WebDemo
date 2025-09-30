@@ -27,19 +27,34 @@ namespace RCParsing.WebDemo.Parsers
 			public string Name { get; set; } = null!;
 		}
 
+		private class Quantifier
+		{
+			public int Min { get; set; }
+			public int Max { get; set; } = -1;
+		}
+
 		static SBNFParser()
 		{
 			var builder = new ParserBuilder();
 
-			builder.Settings.SkipWhitespaces();
+			builder.Settings.Skip(b => b.Token("skip"));
+
+			builder.CreateToken("empty")
+				.Chars(c => false, 0, 0);
+
+			builder.CreateToken("skip")
+				.Choice(
+					b => b.Whitespaces(),
+					b => b.Literal('#').ZeroOrMoreChars(c => c != '\n' && c != '\r')
+				);
 
 			builder.CreateToken("token_name")
-				.Identifier(char.IsLower, c => char.IsLetterOrDigit(c) || c == '_')
+				.Identifier(char.IsUpper, c => char.IsLetterOrDigit(c) || c == '_')
 
 				.Transform(v => v.Text);
 
 			builder.CreateToken("rule_name")
-				.Identifier(char.IsUpper, c => char.IsLetterOrDigit(c) || c == '_')
+				.Identifier(char.IsLower, c => char.IsLetterOrDigit(c) || c == '_')
 
 				.Transform(v => v.Text);
 
@@ -56,8 +71,6 @@ namespace RCParsing.WebDemo.Parsers
 				.Literal(';')
 
 				.TransformSelect(index: 1);
-
-			// Tokens
 
 			var escapes = new Dictionary<string, string>
 			{
@@ -77,13 +90,37 @@ namespace RCParsing.WebDemo.Parsers
 					b => b.Literal('\'')
 				);
 
-			builder.CreateRule("token_literal")
-				.Token("string_literal")
+			builder.CreateRule("quantifier")
+				.Choice(
+					b => b.Literal("?").Transform(_ => new Quantifier { Min = 0, Max = 1 }),
+					b => b.Literal("*").Transform(_ => new Quantifier { Min = 0, Max = -1 }),
+					b => b.Literal("+").Transform(_ => new Quantifier { Min = 1, Max = -1 }),
+					
+					b => b.Literal("{").Number<int>(signed: false).Literal("..").Number<int>(signed: false).Literal("}")
+						.Transform(v => new Quantifier { Min = v.GetIntermediateValue<int>(index: 1), Max = v.GetIntermediateValue<int>(index: 3) }),
+					
+					b => b.Literal("{").Number<int>(signed: false).Literal("..").Literal("}")
+						.Transform(v => new Quantifier { Min = v.GetIntermediateValue<int>(index: 1), Max = -1 }),
+					
+					b => b.Literal("{").Number<int>(signed: false).Literal("}")
+						.Transform(v => new Quantifier { Min = v.GetIntermediateValue<int>(index: 1), Max = v.GetIntermediateValue<int>(index: 1) })
+				);
 
-				.Transform(v =>
-				{
-					return new LiteralTokenPattern(v.GetIntermediateValue<string>());
-				});
+			escapes = new Dictionary<string, string>
+			{
+				["\\/"] = "/",
+			};
+
+			forbids = new HashSet<string> { "/", "\n", "\r" };
+
+			builder.CreateToken("regex")
+				.Between(
+					b => b.Literal('/'),
+					b => b.EscapedText(escapes, forbids),
+					b => b.Literal('/')
+				);
+
+			// Tokens
 
 			builder.CreateRule("token_literal_choice")
 				.OneOrMoreSeparated(b => b.Token("string_literal"), s => s.Literal('|'),
@@ -91,8 +128,21 @@ namespace RCParsing.WebDemo.Parsers
 
 				.Transform(v =>
 				{
-					var literals = v.SelectValues<string>();
-					return new LiteralChoiceTokenPattern(literals);
+					var literals = v.SelectArray<string>();
+
+					foreach (var literal in literals)
+						if (!char.IsLetterOrDigit(literal[^1]) && literal[^1] != '_')
+						{
+							if (literals.Length == 1)
+								return new LiteralTokenPattern(literals[0]);
+							else
+								return new LiteralChoiceTokenPattern(literals);
+						}
+
+					if (literals.Length == 1)
+						return KeywordTokenPattern.UnicodeKeyword(literals[0]);
+					else
+						return KeywordChoiceTokenPattern.UnicodeKeywordChoice(literals);
 				});
 
 			builder.CreateRule("token_identifier")
@@ -145,13 +195,11 @@ namespace RCParsing.WebDemo.Parsers
 				});
 
 			builder.CreateRule("token_regex")
-				.Literal('$')
-				.Keyword("regex")
-				.Token("string_literal")
+				.Token("regex")
 
 				.Transform(v =>
 				{
-					var regex = v.GetValue<string>(index: 2);
+					var regex = v.GetIntermediateValue<string>();
 					return new RegexTokenPattern(regex);
 				});
 
@@ -160,12 +208,9 @@ namespace RCParsing.WebDemo.Parsers
 					b => b.Literal('(').Rule("token_expr").Literal(')').TransformSelect(index: 1),
 					b => b.Token("token_name"),
 					b => b.Rule("token_identifier"),
-					b => b.Rule("token_keyword_choice"),
-					b => b.Rule("token_keyword"),
 					b => b.Rule("token_number"),
 					b => b.Rule("token_regex"),
-					b => b.Rule("token_literal_choice"),
-					b => b.Rule("token_literal")
+					b => b.Rule("token_literal_choice")
 				)
 				
 				.Transform(v =>
@@ -183,22 +228,49 @@ namespace RCParsing.WebDemo.Parsers
 					throw new Exception();
 				});
 
-			builder.CreateRule("token_quantifier")
+			builder.CreateRule("token_separatedrepeat")
 				.Rule("token_term")
-				.Optional(b => b.LiteralChoice("+", "*", "?"))
+				.ZeroOrMore(b => b
+					.Literal('%').Rule("token_term").Rule("quantifier"))
+
+				.Transform(v =>
+				{
+					var token = v.GetValue<Utils.Or<string, BuildableTokenPattern>>(index: 0);
+					var sepParent = v[1];
+					
+					foreach (var sep in sepParent)
+					{
+						var sepToken = sep.GetValue<Utils.Or<string, BuildableTokenPattern>>(index: 1);
+						var quantifier = sep.GetValue<Quantifier>(index: 2);
+
+						token = new BuildableSeparatedRepeatTokenPattern
+						{
+							Child = token,
+							Separator = sepToken,
+							MinCount = quantifier.Min,
+							MaxCount = quantifier.Max
+						};
+					}
+
+					return token;
+				});
+
+			builder.CreateRule("token_quantifier")
+				.Rule("token_separatedrepeat")
+				.Optional(b => b.Rule("quantifier"))
 
 				.Transform(v =>
 				{
 					var value = v.GetValue<Utils.Or<string, BuildableTokenPattern>>(index: 0);
-					var quantifier = v.TryGetValue<string>(index: 1);
+					var quantifier = v.TryGetValue<Quantifier>(index: 1);
 
-					value = quantifier switch
+					if (quantifier != null)
 					{
-						"+" => new BuildableRepeatTokenPattern { Child = value, MinCount = 1, MaxCount = -1 },
-						"*" => new BuildableRepeatTokenPattern { Child = value, MinCount = 0, MaxCount = -1 },
-						"?" => new BuildableOptionalTokenPattern { Child = value },
-						_ => value
-					};
+						if (quantifier.Min == 0 && quantifier.Max == 1)
+							value = new BuildableOptionalTokenPattern { Child = value };
+						else
+							value = new BuildableRepeatTokenPattern { Child = value, MinCount = quantifier.Min, MaxCount = quantifier.Max };
+					}
 
 					return value;
 				});
@@ -261,22 +333,49 @@ namespace RCParsing.WebDemo.Parsers
 					throw new Exception();
 				});
 
-			builder.CreateRule("rule_quantifier")
+			builder.CreateRule("rule_separatedrepeat")
 				.Rule("rule_term")
-				.Optional(b => b.LiteralChoice("+", "*", "?"))
+				.ZeroOrMore(b => b
+					.Literal('%').Rule("rule_term").Rule("quantifier"))
+
+				.Transform(v =>
+				{
+					var rule = v.GetValue<Utils.Or<string, BuildableParserRule>>(index: 0);
+					var sepParent = v[1];
+
+					foreach (var sep in sepParent)
+					{
+						var sepRule = sep.GetValue<Utils.Or<string, BuildableParserRule>>(index: 1);
+						var quantifier = sep.GetValue<Quantifier>(index: 2);
+
+						rule = new BuildableSeparatedRepeatParserRule
+						{
+							Child = rule,
+							Separator = sepRule,
+							MinCount = quantifier.Min,
+							MaxCount = quantifier.Max
+						};
+					}
+
+					return rule;
+				});
+
+			builder.CreateRule("rule_quantifier")
+				.Rule("rule_separatedrepeat")
+				.Optional(b => b.Rule("quantifier"))
 
 				.Transform(v =>
 				{
 					var value = v.GetValue<Utils.Or<string, BuildableParserRule>>(index: 0);
-					var quantifier = v.TryGetValue<string>(index: 1);
+					var quantifier = v.TryGetValue<Quantifier>(index: 1);
 
-					value = quantifier switch
+					if (quantifier != null)
 					{
-						"+" => new BuildableRepeatParserRule { Child = value, MinCount = 1, MaxCount = -1 },
-						"*" => new BuildableRepeatParserRule { Child = value, MinCount = 0, MaxCount = -1 },
-						"?" => new BuildableOptionalParserRule { Child = value },
-						_ => value
-					};
+						if (quantifier.Min == 0 && quantifier.Max == 1)
+							value = new BuildableOptionalParserRule { Child = value };
+						else
+							value = new BuildableRepeatParserRule { Child = value, MinCount = quantifier.Min, MaxCount = quantifier.Max };
+					}
 
 					return value;
 				});
@@ -325,7 +424,7 @@ namespace RCParsing.WebDemo.Parsers
 					b => b.Keywords("after", "greedy")	.Transform(_ => ParserSkippingStrategy.TryParseThenSkipGreedy),
 					b => b.Keywords("after", "lazy")	.Transform(_ => ParserSkippingStrategy.TryParseThenSkipLazy),
 					b => b.Keywords("after")			.Transform(_ => ParserSkippingStrategy.TryParseThenSkip),
-					b => b.Chars(c => false, 0, 0)		.Transform(_ => ParserSkippingStrategy.SkipBeforeParsing)
+					b => b.Token("empty")				.Transform(_ => ParserSkippingStrategy.SkipBeforeParsing)
 				);
 
 			builder.CreateRule("rule_def")
@@ -335,7 +434,7 @@ namespace RCParsing.WebDemo.Parsers
 					b => b.Literal("$").Keyword("skip").Rule("skip_strategy")
 						.Transform(v => new SkipRuleDefinition { SkipStrategy = v.GetValue<ParserSkippingStrategy>(index: 2) }),
 					b => b.Token("rule_name")
-						.Transform(v => new RuleDefinition { Name = v.GetValue<string>(index: 0) })
+						.Transform(v => new RuleDefinition { Name = v.Text })
 				)
 				.Rule("rule_block")
 
@@ -389,19 +488,40 @@ namespace RCParsing.WebDemo.Parsers
 				.ZeroOrMore(b => b.Choice(
 					b => b.Rule("token_def"),
 					b => b.Rule("rule_def")
-				))
+				)
+				.Recovery(r => r.SkipAfter(b => b.Literal(';')))
+				)
 				.EOF()
+				.RecoveryLast(r => r.FindNext())
 				
 				.TransformSelect(index: 0);
 
 			parser = builder.Build();
 		}
 
+		public static void ImportFrom(string grammar, ParserBuilder builder)
+		{
+			var ast = parser.Parse(grammar, parameter: builder);
+			var exception = new ParsingException(ast.Context);
+			if (exception.Groups.RelevantGroups.Count > 0)
+				throw exception;
+
+			_ = ast.Value; // Trigger the transformation of the AST to a concrete object.
+			
+			builder.CreateToken("EOF")
+				.EOF();
+			builder.CreateToken("WS")
+				.Whitespaces();
+			builder.CreateToken("SPACES")
+				.Spaces();
+			builder.CreateToken("NEWLINE")
+				.Newline();
+		}
+
 		public static Parser ParseGrammar(string grammar)
 		{
 			var builder = new ParserBuilder();
-			var ast = parser.Parse(grammar, parameter: builder);
-			_ = ast.Value; // Trigger the transformation of the AST to a concrete object.
+			ImportFrom(grammar, builder);
 			return builder.Build();
 		}
 	}

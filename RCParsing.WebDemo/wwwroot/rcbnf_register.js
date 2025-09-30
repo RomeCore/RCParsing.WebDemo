@@ -10,10 +10,10 @@
 		],
 
 		operators: [
-			'|', ':', ';', ',', "'", '"', '[', ']', '{', '}', '(', ')'
+			'|', ':', ';', '[', ']', '{', '}', '(', ')', '%'
 		],
 
-		symbols: /[|:';,()\[\]{}]/,
+		symbols: /[|:;()\[\]{}]/,
 
 		tokenizer: {
 			root: [
@@ -24,14 +24,18 @@
 					}
 				}],
 
-				[/[a-zA-Z_][\w]*/, {
+				[/[a-zA-Z][\w]*/, {
 					cases: {
-						'choice|of|sep|by|before|greedy|double': { token: 'keyword.control' },
+						'before|after|lazy|greedy': { token: 'keyword.control' },
 						'@default': 'identifier'
 					}
 				}],
 
 				[/[ \t\r\n]+/, 'white'],
+
+				[/'[^'\n\r]*'/, 'string'],
+
+				[/\/(?:\\\/|[^\/])*\//, 'regexp'],
 
 				[/@symbols/, {
 					cases: {
@@ -40,20 +44,8 @@
 					}
 				}],
 
-				[/'[^']*'/, 'string'],
-
-				[/"([^"\\]|\\.)*$/, 'string.invalid'], 
-				[/"/, 'string', '@string'],
-
-				[/\/[^\/]+\//, 'regexp'],
-
 				[/\d+\.\d+/, 'number.float'],
 				[/\d+/, 'number'],
-			],
-
-			string: [
-				[/[^\\"]+/, 'string'],
-				[/"/, 'string', '@pop']
 			],
 		},
 	};

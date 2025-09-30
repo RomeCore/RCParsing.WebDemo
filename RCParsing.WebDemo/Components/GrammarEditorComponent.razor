@@ -1,0 +1,120 @@
+﻿@inject IJSRuntime JS
+
+<StandaloneCodeEditor @ref="editor"
+Id="grammar-code-editor"
+OnDidChangeModel="OnChange"
+OnDidChangeModelContent="OnChange"
+ConstructionOptions="EditorConstructionOptions" />
+
+<style>
+
+	#grammar-code-editor {
+	}
+
+</style>
+
+@code {
+	#nullable disable
+
+	private StandaloneCodeEditor editor;
+	public Parser parser;
+	public Action OnParserChanged;
+
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions
+			{
+				AutomaticLayout = true,
+				Theme = "vs-dark",
+				Minimap = new EditorMinimapOptions { Enabled = false },
+				SmoothScrolling = true,
+
+				Language = "sbnf",
+				Value =
+	@"
+$skip : WS ;
+$main : value ;
+
+NUMBER : /\d+(?:\.\d+)?/ ;
+STRING : /""[^""]*""/ ;
+BOOL : 'true' | 'false' ;
+NULL : 'null' ;
+
+pair : STRING ':' value ;
+array : '[' value % ',' * ']' ;
+object : '{' pair % ',' * '}' ;
+value : NUMBER | STRING | BOOL | NULL | array | object ;
+".Trim()
+			};
+	}
+
+	protected async override Task OnAfterRenderAsync(bool firstRender)
+	{
+		await base.OnAfterRenderAsync(firstRender);
+		await JS.InvokeVoidAsync("register_lang", "sbnf");
+	}
+
+	private bool _flag;
+
+	private async Task SetErrors(IEnumerable<ErrorGroup> errors)
+	{
+		var model = await editor.GetModel();
+		var markers = new List<MarkerData>();
+
+		foreach (var error in errors)
+		{
+			var message = "Expected one of:\n" + error.Expected.Tokens.ToString().Indent("  ");
+
+			markers.Add(new MarkerData
+				{
+					Severity = MarkerSeverity.Error,
+					Message = message,
+					StartLineNumber = error.Line,
+					EndLineNumber = error.Line,
+					StartColumn = error.Column,
+					EndColumn = error.Column + 1
+				});
+		}
+
+		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "owner", markers);
+		await editor.SetModel(model);
+	}
+
+	private async Task RemoveError()
+	{
+		var model = await editor.GetModel();
+		var markers = new List<MarkerData>();
+		await BlazorMonaco.Editor.Global.SetModelMarkers(JS, model, "owner", markers);
+		await editor.SetModel(model);
+	}
+
+	public async Task Update()
+	{
+		try
+		{
+			var content = await editor.GetValue();
+			parser = Parsers.SBNFParser.ParseGrammar(content);
+			OnParserChanged?.Invoke();
+			await RemoveError();
+		}
+		catch (ParsingException ex)
+		{
+			await SetErrors(ex.Groups.RelevantGroups);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+			await RemoveError();
+		}
+	}
+
+	private async Task OnChange()
+	{
+		if (_flag) return;
+		_flag = true;
+
+		await Update();
+
+		_flag = false;
+	}
+}
