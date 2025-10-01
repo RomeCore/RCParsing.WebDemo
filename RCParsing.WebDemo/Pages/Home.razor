@@ -59,6 +59,7 @@
 	private GrammarEditorComponent grammarEditor;
 	private MainEditorComponent mainEditor;
 	private ASTComponent ast;
+	private string selectedExample;
 
 	protected async override Task OnAfterRenderAsync(bool firstRender)
 	{
@@ -82,8 +83,11 @@
 
 		try
 		{
-			//await Task.Delay(200);
-			//await ChangeExample("JSON");
+			if (selectedExample == null)
+			{
+				await Task.Delay(200);
+				await ChangeExample("JSON");
+			}
 			await Task.Delay(200);
 			await grammarEditor.Update();
 		}
@@ -97,6 +101,7 @@
 
 	private async Task ChangeExample(string exampleName)
 	{
+		selectedExample = exampleName;
 		var (grammar, code) = Examples.examples[exampleName];
 		await grammarEditor.SetContents(grammar);
 		await mainEditor.SetContents(code);

@@ -11,7 +11,7 @@
 				["JSON"] = (
 				"""
 				$skip : WS ;
-				$main : value ;
+				$main : value EOF ;
 
 				NUMBER : /\d+(?:\.\d+)?/ ;
 				STRING : /"[^"]*"/ ;
@@ -36,7 +36,7 @@
 				["Math expressions"] = (
 				"""
 				$skip : WS ;
-				$main : expression ;
+				$main : expression EOF ;
 
 				NUMBER : /\d+/ ;
 				ADD_OP : '+' | '-' ;
@@ -55,7 +55,7 @@
 				["Simple CSV"] = (
 				"""
 				$skip : SPACES ;
-				$main : csv ;
+				$main : csv EOF ;
 
 				STRING : /[^,\n\r]+/ ;
 				
