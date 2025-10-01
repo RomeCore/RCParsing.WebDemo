@@ -32,10 +32,10 @@ jobs:
       run: dotnet publish -c Release -o published --nologo
 
     - name: Change base-tag in index.html
-      run: sed -i 's/<base href="\/" \/>/<base href="\/RCParsing.WebDemo\/" \/>/g' release/wwwroot/index.html
+      run: sed -i 's/<base href="\/" \/>/<base href="\/RCParsing.WebDemo\/" \/>/g' published/wwwroot/index.html
 
     - name: Add .nojekyll file
-      run: touch release/wwwroot/.nojekyll
+      run: touch published/wwwroot/.nojekyll
 
     - name: Deploy Docs
       uses: JamesIves/github-pages-deploy-action@v4
