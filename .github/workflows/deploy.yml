@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -28,14 +31,8 @@ jobs:
     - name: Publish Blazor WASM
       run: dotnet publish -c Release -o published --nologo
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+    - name: Deploy Docs
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
-        path: published/wwwroot
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+        branch: gh-pages
+        folder: published/wwwroot
