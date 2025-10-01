@@ -25,17 +25,17 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Change base-tag in index.html
-      run: sed -i 's/<base href="\/" \/>/<base href="\/RCParsing.WebDemo\/" \/>/g' release/wwwroot/index.html
-
-    - name: Add .nojekyll file
-      run: touch release/wwwroot/.nojekyll
-
     - name: Build project
       run: dotnet build --configuration Release --no-restore
 
     - name: Publish Blazor WASM
       run: dotnet publish -c Release -o published --nologo
+
+    - name: Change base-tag in index.html
+      run: sed -i 's/<base href="\/" \/>/<base href="\/RCParsing.WebDemo\/" \/>/g' release/wwwroot/index.html
+
+    - name: Add .nojekyll file
+      run: touch release/wwwroot/.nojekyll
 
     - name: Deploy Docs
       uses: JamesIves/github-pages-deploy-action@v4
