@@ -86,7 +86,7 @@ namespace RCParsing.WebDemo.Parsers
 			builder.CreateToken("string_literal")
 				.Between(
 					b => b.Literal('\''),
-					b => b.EscapedText(escapes, forbids),
+					b => b.EscapedText(escapes, forbids, allowsEmpty: false),
 					b => b.Literal('\'')
 				);
 

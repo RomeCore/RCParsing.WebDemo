@@ -15,14 +15,23 @@
 
 <style>
 
+	.page {
+		display: grid;
+		grid-template-rows: 60px 1fr;
+		height: 100vh;
+	}
+
 	.nav-bar {
 		flex-shrink: 0;
 		height: 60px;
+		display: flex;
+		align-items: center;
+		padding: 0 20px;
+		background: #eee;
 	}
 
 	.content {
-		flex: 1;
-		overflow: auto;
+		overflow: hidden;
 	}
 
 </style>

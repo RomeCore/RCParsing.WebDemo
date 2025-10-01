@@ -15,7 +15,7 @@
 }
 else
 {
-	<div style="overflow-y: auto; border: 1px solid #ccc;">
+	<div style="overflow: auto; border: 1px solid #ccc;">
 		<MermaidDiagram Definition="@definition" />
 	</div>
 }
@@ -24,7 +24,7 @@ else
 	#nullable disable
 
 	private string definition;
-	private ParsingException exception;
+	private Exception exception;
 	private ParsedRuleResultBase originalAst;
 	private bool optimizeAst = false;
 
@@ -83,7 +83,7 @@ else
 		InvokeAsync(StateHasChanged);
 	}
 
-	public void ShowException(ParsingException exception)
+	public void ShowException(Exception exception)
 	{
 		this.exception = exception;
 		InvokeAsync(StateHasChanged);

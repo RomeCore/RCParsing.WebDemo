@@ -1,17 +1,10 @@
 ﻿@inject IJSRuntime JS
 
 <StandaloneCodeEditor @ref="editor"
-Id="main-code-editor"
-OnDidChangeModel="OnChange"
-OnDidChangeModelContent="OnChange"
-ConstructionOptions="EditorConstructionOptions" />
-
-<style>
-
-	#main-code-editor {
-	}
-
-</style>
+	Id="main-code-editor"
+	OnDidChangeModel="OnChange"
+	OnDidChangeModelContent="OnChange"
+	ConstructionOptions="EditorConstructionOptions" />
 
 @code {
 	#nullable disable
@@ -19,7 +12,7 @@ ConstructionOptions="EditorConstructionOptions" />
 	private StandaloneCodeEditor editor;
 	public Parser parser;
 	public ParsedRuleResultBase ast;
-	public ParsingException exception;
+	public Exception exception;
 	public Action OnParseStateChanged;
 
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
@@ -105,7 +98,8 @@ ConstructionOptions="EditorConstructionOptions" />
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine(ex);
+			exception = null;
+			OnParseStateChanged?.Invoke();
 			await RemoveError();
 		}
 	}

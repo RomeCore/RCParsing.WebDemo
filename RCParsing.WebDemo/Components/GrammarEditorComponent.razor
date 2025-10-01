@@ -6,19 +6,13 @@ OnDidChangeModel="OnChange"
 OnDidChangeModelContent="OnChange"
 ConstructionOptions="EditorConstructionOptions" />
 
-<style>
-
-	#grammar-code-editor {
-	}
-
-</style>
-
 @code {
 	#nullable disable
 
 	private StandaloneCodeEditor editor;
 	public Parser parser;
-	public Action OnParserChanged;
+	public Exception exception;
+	public Action OnParseStateChanged;
 
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
@@ -94,16 +88,20 @@ value : NUMBER | STRING | BOOL | NULL | array | object ;
 		{
 			var content = await editor.GetValue();
 			parser = Parsers.SBNFParser.ParseGrammar(content);
-			OnParserChanged?.Invoke();
+			exception = null;
+			OnParseStateChanged?.Invoke();
 			await RemoveError();
 		}
 		catch (ParsingException ex)
 		{
+			exception = ex;
+			OnParseStateChanged?.Invoke();
 			await SetErrors(ex.Groups.RelevantGroups);
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine(ex);
+			exception = ex;
+			OnParseStateChanged?.Invoke();
 			await RemoveError();
 		}
 	}

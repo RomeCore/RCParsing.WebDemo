@@ -1,41 +1,45 @@
 ﻿@page "/"
-@inject IJSRuntime JS
-
-<PageTitle>Home</PageTitle>
 
 <div class="main-container">
-
 	<div class="editor-container">
-
 		<GrammarEditorComponent @ref="grammarEditor" />
-
 		<MainEditorComponent @ref="mainEditor" />
-
 	</div>
 
-	<div>
-
+	<div class="ast-container">
 		<ASTComponent @ref="ast" />
-
 	</div>
-
 </div>
 
 <style>
-
-	.editor-container {
-	display: grid;
-	grid-template-rows: 1fr 1fr;
-	gap: 20px;
-	}
-
 	.main-container {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 20px;
+	height: 100%;
+	overflow: hidden;
 	}
 
+	.editor-container {
+		display: grid;
+		grid-template-rows: 1fr 1fr;
+		gap: 20px;
+		height: 100%;
+	}
+
+	.ast-container {
+		width: 45vw;
+		height: 90vh;
+		overflow: auto;
+	}
+
+	#main-code-editor,
+	#grammar-code-editor {
+		width: 45vw;
+		height: 42vh;
+	}
 </style>
+
 
 @code {
 	#nullable disable
@@ -48,14 +52,21 @@
 	{
 		await base.OnAfterRenderAsync(firstRender);
 
-		grammarEditor.OnParserChanged += () => mainEditor.SetParser(grammarEditor.parser);
-		mainEditor.OnParseStateChanged += () =>
+		void GrammarStateChanged()
 		{
+			mainEditor.SetParser(grammarEditor.parser);
 			if (mainEditor.exception != null)
-				ast.ShowException(mainEditor.exception);
+				ast.ShowException(grammarEditor.exception);
+		}
+		void StateChanged()
+		{
+			if (grammarEditor.exception != null || mainEditor.exception != null)
+				ast.ShowException(grammarEditor.exception ?? mainEditor.exception);
 			else
 				ast.Render(mainEditor.ast);
-		};
+		}
+		grammarEditor.OnParseStateChanged += GrammarStateChanged;
+		mainEditor.OnParseStateChanged += StateChanged;
 
 		try
 		{
