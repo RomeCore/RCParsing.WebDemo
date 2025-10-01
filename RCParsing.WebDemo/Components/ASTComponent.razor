@@ -13,7 +13,7 @@
 		</code>
 	</pre>
 }
-else
+else if (!string.IsNullOrWhiteSpace(definition))
 {
 	<div style="overflow: auto; border: 1px solid #ccc;">
 		<MermaidDiagram Definition="@definition" />
@@ -30,6 +30,9 @@ else
 
 	public void Render(ParsedRuleResultBase ast)
 	{
+		if (ast == null)
+			return;
+
 		originalAst = ast;
 		if (optimizeAst)
 			ast = ast.Optimized();

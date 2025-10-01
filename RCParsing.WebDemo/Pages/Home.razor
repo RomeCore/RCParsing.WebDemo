@@ -7,6 +7,18 @@
 	</div>
 
 	<div class="ast-container">
+
+		<label>
+			Example:
+
+			<select @onchange="OnExampleChange">
+				@foreach (var exampleName in Examples.examples.Keys)
+				{
+					<option value="@exampleName">@exampleName</option>
+				}
+			</select>
+		</label>
+
 		<ASTComponent @ref="ast" />
 	</div>
 </div>
@@ -70,9 +82,23 @@
 
 		try
 		{
-			await Task.Delay(100);
+			//await Task.Delay(200);
+			//await ChangeExample("JSON");
+			await Task.Delay(200);
 			await grammarEditor.Update();
 		}
 		catch {}
+	}
+
+	private async Task OnExampleChange(ChangeEventArgs args)
+	{
+		await ChangeExample((string)args.Value);
+	}
+
+	private async Task ChangeExample(string exampleName)
+	{
+		var (grammar, code) = Examples.examples[exampleName];
+		await grammarEditor.SetContents(grammar);
+		await mainEditor.SetContents(code);
 	}
 }

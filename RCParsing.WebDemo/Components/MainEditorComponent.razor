@@ -22,16 +22,7 @@
 				AutomaticLayout = true,
 				Theme = "vs-dark",
 				Minimap = new EditorMinimapOptions { Enabled = false },
-				SmoothScrolling = true,
-
-				Value =
-@"
-{
-	""name"": ""John Doe"",
-	""age"": 21,
-	""tags"": [ ""tag1"", ""tag2"", ""tag3"" ]
-}
-".Trim()
+				SmoothScrolling = true
 			};
 	}
 
@@ -78,6 +69,11 @@
 	{
 		this.parser = parser;
 		OnChange();
+	}
+
+	public async Task SetContents(string contents)
+	{
+		await editor.SetValue(contents);
 	}
 
 	public async Task Update()
