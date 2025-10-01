@@ -58,9 +58,9 @@
 				$main : csv EOF ;
 
 				STRING : /[^,\n\r]+/ ;
-				
+
 				row : STRING % ',' + ;
-				csv : row % NEWLINE + ;
+				csv : row % ('\r'? '\n') + ;
 				"""
 				,
 				"""
