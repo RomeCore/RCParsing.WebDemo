@@ -4,6 +4,7 @@ using RCParsing.Building;
 using RCParsing.Building.ParserRules;
 using RCParsing.Building.TokenPatterns;
 using RCParsing.ParserRules;
+using RCParsing.Tokenizers;
 using RCParsing.TokenPatterns;
 
 namespace RCParsing.WebDemo.Parsers
@@ -37,7 +38,7 @@ namespace RCParsing.WebDemo.Parsers
 		{
 			var builder = new ParserBuilder();
 
-			builder.Settings.Skip(b => b.Token("skip"));
+			builder.Settings.Skip(b => b.Token("skip"), ParserSkippingStrategy.SkipBeforeParsingGreedy);
 
 			builder.CreateToken("empty")
 				.Chars(c => false, 0, 0);
@@ -415,6 +416,22 @@ namespace RCParsing.WebDemo.Parsers
 			builder.CreateRule("rule_expr")
 				.Rule("rule_choice");
 
+			// Tokenizers
+
+			builder.CreateRule("indent_tokenizer")
+				.Keyword("indent")
+				.Token("token_name")
+				.Token("token_name")
+				.Optional(b => b.Token("token_name"))
+
+				.Transform(v =>
+				{
+					string indentToken = v.GetValue<string>(index: 1);
+					string dedentToken = v.GetValue<string>(index: 2);
+					string newlineToken = v.GetValue<string>(index: 3);
+					return new IndentTokenizer(indentToken, dedentToken, newlineToken);
+				});
+
 			// Main rules
 
 			builder.CreateRule("skip_strategy")
@@ -485,8 +502,28 @@ namespace RCParsing.WebDemo.Parsers
 					return null;
 				});
 
+			builder.CreateRule("tokenizer_def")
+				.Literal("$")
+				.Keyword("tokenizer")
+				.Choice(
+					b => b.Rule("indent_tokenizer")
+				)
+				
+				.Transform(v =>
+				{
+					var builder = v.GetParsingParameter<ParserBuilder>();
+					var tokenizer = v.GetValue<BarrierTokenizer>(index: 2);
+
+					builder.BarrierTokenizers.Add(tokenizer);
+
+					return null;
+				});
+
+			// MAIN
+
 			builder.CreateMainRule()
 				.ZeroOrMore(b => b.Choice(
+					b => b.Rule("tokenizer_def"),
 					b => b.Rule("token_def"),
 					b => b.Rule("rule_def")
 				)
@@ -515,8 +552,6 @@ namespace RCParsing.WebDemo.Parsers
 				.Whitespaces();
 			builder.CreateToken("SPACES")
 				.Spaces();
-			builder.CreateToken("NEWLINE")
-				.Newline();
 		}
 
 		public static Parser ParseGrammar(string grammar)

@@ -10,13 +10,22 @@
 
 		<label>
 			Example:
-
 			<select @onchange="OnExampleChange">
 				@foreach (var exampleName in Examples.examples.Keys)
 				{
 					<option value="@exampleName">@exampleName</option>
 				}
 			</select>
+
+			<input type="checkbox" @onchange="DetCheckboxChanged" />
+			Detailed messages
+
+			<input type="checkbox" @onchange="StCheckboxChanged" />
+			Stack traces
+
+			<input type="checkbox" @onchange="WkCheckboxChanged" />
+			Walk trace
+
 		</label>
 
 		<ASTComponent @ref="ast" />
@@ -105,5 +114,23 @@
 		var (grammar, code) = Examples.examples[exampleName];
 		await grammarEditor.SetContents(grammar);
 		await mainEditor.SetContents(code);
+	}
+
+	private async Task DetCheckboxChanged(ChangeEventArgs args)
+	{
+		grammarEditor.detailedMessages = (bool)args.Value;
+		await grammarEditor.Update();
+	}
+
+	private async Task StCheckboxChanged(ChangeEventArgs args)
+	{
+		grammarEditor.stackTraces = (bool)args.Value;
+		await grammarEditor.Update();
+	}
+
+	private async Task WkCheckboxChanged(ChangeEventArgs args)
+	{
+		grammarEditor.walkTrace = (bool)args.Value;
+		await grammarEditor.Update();
 	}
 }

@@ -1,8 +1,8 @@
 ﻿@using System.Text
 
 <label>
-	<input type="checkbox" checked="@optimizeAst" @onchange="CheckboxChanged" />
-	Optimize tree?
+	<input type="checkbox" checked="@optimizeAst" @onchange="OptCheckboxChanged" />
+	Optimize AST
 </label>
 
 @if (exception != null)
@@ -72,7 +72,7 @@ else if (!string.IsNullOrWhiteSpace(definition))
 		Render(sb.ToString());
 	}
 
-	private void CheckboxChanged(ChangeEventArgs e)
+	private void OptCheckboxChanged(ChangeEventArgs e)
 	{
 		optimizeAst = (bool)e.Value;
 		if (exception == null)

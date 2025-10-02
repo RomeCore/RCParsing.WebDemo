@@ -1,4 +1,5 @@
-﻿@inject IJSRuntime JS
+﻿@using RCParsing.WebDemo.Parsers
+@inject IJSRuntime JS
 
 <StandaloneCodeEditor @ref="editor"
 Id="grammar-code-editor"
@@ -13,6 +14,7 @@ ConstructionOptions="EditorConstructionOptions" />
 	public Parser parser;
 	public Exception exception;
 	public Action OnParseStateChanged;
+	public bool detailedMessages, stackTraces, walkTrace;
 
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
@@ -76,7 +78,19 @@ ConstructionOptions="EditorConstructionOptions" />
 		try
 		{
 			var content = await editor.GetValue();
-			parser = Parsers.SBNFParser.ParseGrammar(content);
+
+			var builder = new ParserBuilder();
+			SBNFParser.ImportFrom(content, builder);
+
+			if (detailedMessages)
+				builder.Settings.DetailedErrors();
+			if (stackTraces)
+				builder.Settings.WriteStackTrace();
+			if (walkTrace)
+				builder.Settings.SetMaxStepsToDisplay(-1).RecordWalkTrace();
+
+			parser = builder.Build();
+
 			exception = null;
 			OnParseStateChanged?.Invoke();
 			await RemoveError();
