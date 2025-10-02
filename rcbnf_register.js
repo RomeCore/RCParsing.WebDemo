@@ -5,8 +5,7 @@
 		tokenPostfix: '.rcgrammar',
 
 		keywords: [
-			'$keyword', '$identifier', '$number', '$pattern', '$main',
-			'$skip', '$list', '$until', '$newline', '$whitespaces'
+			'$keyword', '$identifier', '$number', '$main', '$skip', '$tokenizer'
 		],
 
 		operators: [
@@ -27,6 +26,7 @@
 				[/[a-zA-Z][\w]*/, {
 					cases: {
 						'before|after|lazy|greedy': { token: 'keyword.control' },
+						'EOF|WS|SPACES': { token: 'keyword.control' },
 						'@default': 'identifier'
 					}
 				}],
@@ -46,6 +46,8 @@
 
 				[/\d+\.\d+/, 'number.float'],
 				[/\d+/, 'number'],
+
+				[/#[^\n\r]*/, 'comment']
 			],
 		},
 	};
