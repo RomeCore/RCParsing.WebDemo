@@ -508,6 +508,7 @@ namespace RCParsing.WebDemo.Parsers
 				.Choice(
 					b => b.Rule("indent_tokenizer")
 				)
+				.Literal(";")
 				
 				.Transform(v =>
 				{
@@ -527,7 +528,7 @@ namespace RCParsing.WebDemo.Parsers
 					b => b.Rule("token_def"),
 					b => b.Rule("rule_def")
 				)
-				.Recovery(r => r.SkipAfter(b => b.Literal(';')))
+				.Recovery(r => r.SkipAfter(b => b.Literal(";")))
 				)
 				.EOF()
 				.RecoveryLast(r => r.FindNext())
