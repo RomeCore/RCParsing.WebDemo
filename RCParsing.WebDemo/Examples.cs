@@ -10,14 +10,19 @@
 			{
 				["JSON"] = (
 				"""
+				# Skip the whitespaces
 				$skip : WS ;
+
+				# Declare the main rule
 				$main : value EOF ;
 
+				# Basic tokens
 				NUMBER : /\d+(?:\.\d+)?/ ;
 				STRING : /"[^"]*"/ ;
 				BOOL : 'true' | 'false' ;
 				NULL : 'null' ;
 
+				# Rules
 				pair : STRING ':' value ;
 				array : '[' value % ',' * ']' ;
 				object : '{' pair % ',' * '}' ;
@@ -35,13 +40,18 @@
 
 				["Math expressions"] = (
 				"""
+				# Skip the whitespaces
 				$skip : WS ;
+				
+				# Declare the main rule
 				$main : expression EOF ;
 
+				# Basic tokens: numbers and operators
 				NUMBER : /\d+/ ;
 				ADD_OP : '+' | '-' ;
 				MUL_OP : '*' | '/' ;
 
+				# The expression rules
 				expression : term % ADD_OP + ;
 				term : factor % MUL_OP + ;
 				factor : NUMBER | '(' expression ')' ;
@@ -54,11 +64,16 @@
 
 				["Simple CSV"] = (
 				"""
+				# Skip just spaces, keeping newlines
 				$skip : SPACES ;
+				
+				# Declare the main rule
 				$main : csv EOF ;
 
+				# The cell token
 				STRING : /[^,\n\r]+/ ;
 
+				# Rules
 				row : STRING % ',' + ;
 				csv : row % ('\r'? '\n') + ;
 				"""
