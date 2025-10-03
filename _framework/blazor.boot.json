@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "RCParsing.WebDemo",
   "resources": {
-    "hash": "sha256-TOhLpTT5dLTihu5D+XvLMHYhKHnfZtqdBh4Nnes2myA=",
+    "hash": "sha256-uLyq9AVaeLXA2IPRbPy6itCdbnZ35N8JXBY26gHwBP0=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-D0bzod5lwwSzPR43JC8TTCcZKw+3jIHOk8CZFCRj5is="
     },
@@ -53,7 +53,7 @@
       "System.Text.RegularExpressions.wasm": "sha256-iAWCC9duk8tuer/AV4ENqdtDbMZBr4iFriVEpxaHiE0=",
       "System.Threading.wasm": "sha256-ALJhXJMmLXdpWqplQ7Ghw4fhX1J8lAEl9A0imUz0ZNM=",
       "System.Private.CoreLib.wasm": "sha256-BB0D5k9x+HN6yxMZdkYXyttr24uFZX+KRSpcoidVB8E=",
-      "RCParsing.WebDemo.wasm": "sha256-WtMcEzzlUiMZ2Z6CY3Bb+vgR+bVijn+WzhUwasUCKvA="
+      "RCParsing.WebDemo.wasm": "sha256-rE4rKib3rBGLG8gCMzogcOsif9n7XimAIFJH4QFf0hI="
     }
   },
   "cacheBootResources": true,
