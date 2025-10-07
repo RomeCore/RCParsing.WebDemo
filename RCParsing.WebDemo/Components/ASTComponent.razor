@@ -19,7 +19,7 @@ else if (!string.IsNullOrWhiteSpace(definition))
 		<MermaidDiagram Definition="@definition" />
 	</div>
 
-	@if (walkTrace != null)
+	@if (!string.IsNullOrWhiteSpace(walkTrace))
 	{
 		<pre>
 			<code>

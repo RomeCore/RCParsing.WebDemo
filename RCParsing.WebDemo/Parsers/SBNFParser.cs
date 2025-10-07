@@ -124,8 +124,8 @@ namespace RCParsing.WebDemo.Parsers
 			// Tokens
 
 			builder.CreateRule("token_literal_choice")
-				.OneOrMoreSeparated(b => b.Token("string_literal"), s => s.Literal('|'),
-					includeSeparatorsInResult: false)
+				.RepeatSeparated(b => b.Token("string_literal"), s => s.Literal('|'),
+					min: 1, max: 1, includeSeparatorsInResult: false)
 
 				.Transform(v =>
 				{
@@ -420,16 +420,20 @@ namespace RCParsing.WebDemo.Parsers
 
 			builder.CreateRule("indent_tokenizer")
 				.Keyword("indent")
+				.Optional(b => b.Literal(":").Number<int>(signed: false).TransformSelect(1))
 				.Token("token_name")
 				.Token("token_name")
 				.Optional(b => b.Token("token_name"))
 
 				.Transform(v =>
 				{
-					string indentToken = v.GetValue<string>(index: 1);
-					string dedentToken = v.GetValue<string>(index: 2);
-					string newlineToken = v.GetValue<string>(index: 3);
-					return new IndentTokenizer(indentToken, dedentToken, newlineToken);
+					int indentSize = v[1].Count > 0 ? v.GetValue<int>(index: 1) : 4;
+
+					string indentToken = v.GetValue<string>(index: 2);
+					string dedentToken = v.GetValue<string>(index: 3);
+					string newlineToken = v.GetValue<string>(index: 4);
+
+					return new IndentTokenizer(indentSize, indentToken, dedentToken, newlineToken);
 				});
 
 			// Main rules
@@ -553,6 +557,8 @@ namespace RCParsing.WebDemo.Parsers
 				.Whitespaces();
 			builder.CreateToken("SPACES")
 				.Spaces();
+			builder.CreateToken("NEWLINE")
+				.Newline();
 		}
 
 		public static Parser ParseGrammar(string grammar)

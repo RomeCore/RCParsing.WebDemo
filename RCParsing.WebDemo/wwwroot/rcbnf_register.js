@@ -26,7 +26,7 @@
 				[/[a-zA-Z][\w]*/, {
 					cases: {
 						'before|after|lazy|greedy': { token: 'keyword.control' },
-						'EOF|WS|SPACES': { token: 'keyword.control' },
+						'EOF|WS|SPACES|NEWLINE': { token: 'keyword.control' },
 						'@default': 'identifier'
 					}
 				}],

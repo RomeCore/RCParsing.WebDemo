@@ -75,7 +75,7 @@
 
 				# Rules
 				row : STRING % ',' + ;
-				csv : row % ('\r'? '\n') + ;
+				csv : row % NEWLINE + ;
 				"""
 				,
 				"""
@@ -83,6 +83,47 @@
 				John,25,New York
 				Alice,30,London
 				Bob,22,Paris
+				"""
+				),
+
+				["YAML subset"] = (
+				"""
+				# Skip whitespaces
+				$skip : WS ;
+
+				# Add barrier tokenizer for indentation
+				$tokenizer indent:2 INDENT DEDENT NL ;
+
+				# Basic tokens
+				BOOL : 'true' | 'false' ;
+				NUMBER : /\d+(?:\.\d+)?/ ;
+				STRING : /"[^"]*"/ ;
+				IDENTIFIER : /[a-zA-Z_][a-zA-Z0-9_]*/ ;
+
+				# Rules for YAML structure
+				object_pair : IDENTIFIER ':' value NL ;
+				object_child : object_pair | object | NL ;
+				object : IDENTIFIER ':' NL+ INDENT object_child+ DEDENT ;
+
+				# Value types
+				value : BOOL | NUMBER | STRING ;
+
+				# Main rule
+				$main : object_child* EOF ;
+				"""
+				,
+				"""
+				a_nested_map:
+				  key: true
+				  another_key: 0.9
+				  another_nested_map:
+				    hello: "Hello world!"
+				  key_after: 999
+
+				simple_object:
+				  name: "John"
+				  age: 25
+				  active: true
 				"""
 				)
 			};
